@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const { PORT = 3000 } = process.env;
+const { MONGOBASE = 'mongodb://127.0.0.1:27017/bitfilmsdb' } = process.env;
 
 const NotFoundError = require('./errors/NotFoundError');
 
@@ -44,7 +45,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-mongoose.connect('mongodb://127.0.0.1:27017/bitfilmsdb', {
+mongoose.connect(MONGOBASE, {
   useUnifiedTopology: true,
   useNewUrlParser: true,
   autoIndex: true,

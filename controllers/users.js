@@ -1,13 +1,13 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const User = require('../models/userModel');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequest = require('../errors/BadRequest');
 const { UserCreateError } = require('../errors/UserCreateError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
 
-module.exports.getUser = (req, res, next) => {
+module.exports.getUserInfo = (req, res, next) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
@@ -25,19 +25,8 @@ module.exports.getUser = (req, res, next) => {
     });
 };
 
-module.exports.getUsers = (req, res, next) => {
-  User.find({})
-    .then((users) => res.send({ data: users }))
-    .catch((err) => {
-      console.log(err);
-      next(err);
-    });
-};
-
 module.exports.createUser = (req, res, next) => {
-  const {
-    name, about, avatar, email, password,
-  } = req.body;
+  const { email, password, name } = req.body;
 
   return User.findOne({ email })
     .then((mail) => {
@@ -47,15 +36,13 @@ module.exports.createUser = (req, res, next) => {
 
       bcrypt.hash(password, 10, (err, hash) => {
         User.create({
-          name, about, avatar, email, password: hash,
+          name, email, password: hash,
         })
           .then((user) => {
             res.status(200).send({
               _id: user._id,
               email: user.email,
               name: user.name,
-              about: user.about,
-              avatar: user.avatar,
             });
           });
       });
@@ -63,44 +50,31 @@ module.exports.createUser = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.updateProfile = (req, res, next) => {
-  const { name, about } = req.body;
+module.exports.updateUserInfo = (req, res, next) => {
+  const { email, name } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then((user) => {
-      if (user) {
-        res.status(200).send({ data: user });
-      } else {
-        throw new NotFoundError('Пользователь не найден');
+  User.findOne({ email })
+    .then((data) => {
+      if (data) {
+        throw new UserCreateError('Почта уже занята!');
       }
+      User.findByIdAndUpdate(req.user._id, { email, name }, { new: true, runValidators: true })
+        .then((user) => {
+          if (!user) {
+            throw new NotFoundError('Пользователь не найден');
+          } else {
+            res.status(200).send(user);
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'ValidationError') {
+            throw new NotFoundError('Переданы некорректные данные');
+          } else {
+            next(err);
+          }
+        });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        next(new BadRequest('Некорректнaые данные'));
-      } else {
-        next(err);
-      }
-    });
-};
-
-module.exports.updateAvatar = (req, res, next) => {
-  const { avatar } = req.body;
-
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => {
-      if (user) {
-        res.send({ data: user });
-      } else {
-        throw new NotFoundError('Пользователь не найден');
-      }
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        next(new BadRequest('Некорректные данные'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 module.exports.login = (req, res, next) => {
@@ -128,17 +102,6 @@ module.exports.login = (req, res, next) => {
           res.send({ token });
         })
         .catch(next);
-    })
-    .catch(next);
-};
-
-module.exports.getMe = (req, res, next) => {
-  User.findById(req.user._id)
-    .then((user) => {
-      if (!user) {
-        throw new UnauthorizedError('Необходима авторизация');
-      }
-      res.status(200).send(user);
     })
     .catch(next);
 };

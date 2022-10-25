@@ -3,7 +3,7 @@ const router = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
 const validateURL = require('../utils/validateUrl');
 
-const { createMovie, deleteMovieById, getSavedMovies } = require('../controllers/users');
+const { createMovie, deleteMovieById, getSavedMovies } = require('../controllers/movies');
 
 router.get('/movies', getSavedMovies);
 

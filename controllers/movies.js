@@ -38,7 +38,6 @@ module.exports.deleteMovieById = (req, res, next) => {
       return Movie.remove(movie)
         .then((data) => {
           res.status(200).send(data);
-          // res.send({ message: data });
         })
         .catch((err) => {
           if (err.name === 'CastError') {
@@ -46,5 +45,6 @@ module.exports.deleteMovieById = (req, res, next) => {
           }
         })
         .catch(next);
-    });
+    })
+    .catch(next);
 };

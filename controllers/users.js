@@ -1,28 +1,22 @@
-require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const NotFoundError = require('../errors/NotFoundError');
-const BadRequest = require('../errors/BadRequest');
 const { UserCreateError } = require('../errors/UserCreateError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
 
 module.exports.getUserInfo = (req, res, next) => {
-  User.findById(req.params.userId)
+  User.findById(req.user._id)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError({ message: 'Пользователь не найден' });
+        throw new NotFoundError('Пользователь не найден');
       }
-      res.send({ data: user });
+      res.status(200).send({
+        email: user.email,
+        name: user.name,
+      });
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequest('Некорректные данные'));
-      } else {
-        console.log(err);
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
